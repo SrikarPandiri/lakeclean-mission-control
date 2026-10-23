@@ -53,7 +53,10 @@ settings = Settings()
 
 def get_database_url() -> str:
     if settings.DATABASE_URL:
-        return settings.DATABASE_URL
+        url = settings.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        return url
     # Default to local SQLite fallback
     # Place sqlite db in backend directory
     backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
