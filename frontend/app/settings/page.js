@@ -58,7 +58,11 @@ export default function SettingsMethodologyPage() {
               <div className="font-bold text-[#202A28] flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#247A52]" /> FastAPI (Python 3.14)
               </div>
-              <div className="text-[11px] text-[#6B7773]">Local REST API at http://localhost:8000</div>
+              <div className="text-[11px] text-[#6B7773]">
+                {typeof window !== "undefined" && window.location.hostname !== "localhost"
+                  ? "Cloud REST API on Render"
+                  : "Local REST API at http://localhost:8000"}
+              </div>
             </div>
 
             <div className="p-3.5 rounded-lg bg-[#F7F9F8] border border-[#E4EAE7] space-y-1">

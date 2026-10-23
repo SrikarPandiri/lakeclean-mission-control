@@ -68,9 +68,23 @@ export function AuthProvider({ children }) {
   };
 
   const continueAsGuest = async () => {
-    const data = await guestLoginApi();
-    saveSession(data.access_token, data.user);
-    return data.user;
+    try {
+      const data = await guestLoginApi();
+      saveSession(data.access_token, data.user);
+      return data.user;
+    } catch (err) {
+      console.warn("Backend guest login unavailable, using client-side guest session:", err);
+      const fallbackUser = {
+        id: `guest-${Math.random().toString(36).substring(2, 10)}`,
+        email: "guest@lakeclean.demo",
+        display_name: "Guest Explorer",
+        role: "guest",
+        is_active: true,
+      };
+      const fallbackToken = `guest-token-${Date.now()}`;
+      saveSession(fallbackToken, fallbackUser);
+      return fallbackUser;
+    }
   };
 
   const logout = () => {

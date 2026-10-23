@@ -1,7 +1,17 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+function getApiBaseUrl() {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    return isLocal ? "http://localhost:8000/api" : "https://lakeclean-api.onrender.com/api";
+  }
+  return "https://lakeclean-api.onrender.com/api";
+}
 
 async function fetchJson(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
   
   // Retrieve token from localStorage in client environment
   let token = null;

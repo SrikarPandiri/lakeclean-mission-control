@@ -8,6 +8,14 @@ const nextConfig = {
       },
     },
   },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://lakeclean-api.onrender.com/api/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
