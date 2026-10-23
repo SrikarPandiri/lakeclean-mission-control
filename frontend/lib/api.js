@@ -1,12 +1,19 @@
 function getApiBaseUrl() {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+  let url = process.env.NEXT_PUBLIC_API_URL;
+  if (!url) {
+    if (typeof window !== "undefined") {
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      url = isLocal ? "http://localhost:8000/api" : "https://lakeclean-api.onrender.com/api";
+    } else {
+      url = "https://lakeclean-api.onrender.com/api";
+    }
   }
-  if (typeof window !== "undefined") {
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    return isLocal ? "http://localhost:8000/api" : "https://lakeclean-api.onrender.com/api";
+
+  url = url.trim().replace(/\/+$/, "");
+  if (!url.endsWith("/api")) {
+    url = `${url}/api`;
   }
-  return "https://lakeclean-api.onrender.com/api";
+  return url;
 }
 
 async function fetchJson(endpoint, options = {}) {

@@ -92,16 +92,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API Routers
-app.include_router(health.router, prefix="/api")
-app.include_router(auth.router, prefix="/api")
-app.include_router(admin.router, prefix="/api")
-app.include_router(dashboard.router, prefix="/api")
-app.include_router(lakes.router, prefix="/api")
-app.include_router(zones.router, prefix="/api")
-app.include_router(reports.router, prefix="/api")
-app.include_router(missions.router, prefix="/api")
-app.include_router(analytics.router, prefix="/api")
+# Include API Routers (both with /api prefix and root level for fault tolerance)
+api_routers = [
+    health.router,
+    auth.router,
+    admin.router,
+    dashboard.router,
+    lakes.router,
+    zones.router,
+    reports.router,
+    missions.router,
+    analytics.router,
+]
+for r in api_routers:
+    app.include_router(r, prefix="/api")
+    app.include_router(r)
 
 @app.get("/")
 def read_root():
