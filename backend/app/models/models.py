@@ -1,13 +1,37 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import (
-    Column, String, Float, Boolean, DateTime, ForeignKey, Text, JSON, Integer
+    Column, String, Float, Boolean, DateTime, ForeignKey, Text, JSON, Integer, TypeDecorator
 )
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 from backend.app.db.session import Base
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+class GUID(TypeDecorator):
+    """Platform-independent GUID/UUID type.
+    Uses PostgreSQL's native UUID type, or String(36) on SQLite.
+    Accepts str or uuid.UUID, returns str.
+    """
+    impl = String(36)
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(PG_UUID(as_uuid=False))
+        return dialect.type_descriptor(String(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return str(value)
 
 class User(Base):
     __tablename__ = "users"
@@ -26,7 +50,7 @@ class User(Base):
 class Profile(Base):
     __tablename__ = "profiles"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
+    id = Column(GUID, primary_key=True, default=generate_uuid)
     display_name = Column(String(120), nullable=False)
     role = Column(String(50), default="operator")
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -35,7 +59,7 @@ class Profile(Base):
 class WaterBody(Base):
     __tablename__ = "water_bodies"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
+    id = Column(String(64), primary_key=True, default=generate_uuid)
     name = Column(String(120), nullable=False)
     description = Column(Text, nullable=True)
     boundary_geojson = Column(JSON, nullable=True)
@@ -52,8 +76,8 @@ class WaterBody(Base):
 class Zone(Base):
     __tablename__ = "zones"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    water_body_id = Column(String(36), ForeignKey("water_bodies.id"), nullable=False, index=True)
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    water_body_id = Column(String(64), ForeignKey("water_bodies.id"), nullable=False, index=True)
     name = Column(String(120), nullable=False)
     description = Column(Text, nullable=True)
     geometry_geojson = Column(JSON, nullable=False)
@@ -73,9 +97,9 @@ class Zone(Base):
 class WasteReport(Base):
     __tablename__ = "waste_reports"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    water_body_id = Column(String(36), ForeignKey("water_bodies.id"), nullable=False, index=True)
-    zone_id = Column(String(36), ForeignKey("zones.id"), nullable=True, index=True)
+    id = Column(GUID, primary_key=True, default=generate_uuid)
+    water_body_id = Column(String(64), ForeignKey("water_bodies.id"), nullable=False, index=True)
+    zone_id = Column(String(64), ForeignKey("zones.id"), nullable=True, index=True)
     title = Column(String(160), nullable=False)
     category = Column(String(80), nullable=False)  # e.g. Plastic bottles, Organic debris, Mixed waste
     severity = Column(String(30), default="MEDIUM") # LOW, MEDIUM, HIGH, CRITICAL
@@ -98,8 +122,8 @@ class WasteReport(Base):
 class MissionPlan(Base):
     __tablename__ = "mission_plans"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    water_body_id = Column(String(36), ForeignKey("water_bodies.id"), nullable=False, index=True)
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    water_body_id = Column(String(64), ForeignKey("water_bodies.id"), nullable=False, index=True)
     name = Column(String(160), nullable=False)
     status = Column(String(30), default="PLANNED") # DRAFT, FEASIBLE, INFEASIBLE, PLANNED, RUNNING, PAUSED, COMPLETED, ABORTED
     selected_zone_ids = Column(JSON, default=list)
@@ -136,8 +160,8 @@ class MissionPlan(Base):
 class TelemetryEvent(Base):
     __tablename__ = "telemetry_events"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    mission_id = Column(String(36), ForeignKey("mission_plans.id"), nullable=False, index=True)
+    id = Column(GUID, primary_key=True, default=generate_uuid)
+    mission_id = Column(String(64), ForeignKey("mission_plans.id"), nullable=False, index=True)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     battery_pct = Column(Float, nullable=False)
@@ -153,8 +177,8 @@ class TelemetryEvent(Base):
 class MissionEvent(Base):
     __tablename__ = "mission_events"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    mission_id = Column(String(36), ForeignKey("mission_plans.id"), nullable=False, index=True)
+    id = Column(GUID, primary_key=True, default=generate_uuid)
+    mission_id = Column(String(64), ForeignKey("mission_plans.id"), nullable=False, index=True)
     event_type = Column(String(50), nullable=False)
     message = Column(String(255), nullable=False)
     metadata_json = Column(JSON, default=dict)
@@ -165,9 +189,9 @@ class MissionEvent(Base):
 class CleanupRecord(Base):
     __tablename__ = "cleanup_records"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    mission_id = Column(String(36), ForeignKey("mission_plans.id"), nullable=False, index=True)
-    zone_id = Column(String(36), ForeignKey("zones.id"), nullable=True, index=True)
+    id = Column(GUID, primary_key=True, default=generate_uuid)
+    mission_id = Column(String(64), ForeignKey("mission_plans.id"), nullable=False, index=True)
+    zone_id = Column(String(64), ForeignKey("zones.id"), nullable=True, index=True)
     estimated_waste_collected = Column(Float, default=0.0)
     unit = Column(String(20), default="kg")
     verification_status = Column(String(50), default="SIMULATED_VERIFIED")

@@ -65,16 +65,21 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         is_active=True,
     )
     db.add(new_user)
-    
-    # Also sync profile entry for database consistency
-    profile = Profile(
-        id=new_user.id,
-        display_name=clean_name,
-        role="operator"
-    )
-    db.add(profile)
     db.commit()
     db.refresh(new_user)
+    
+    # Also sync profile entry for database consistency if supported
+    try:
+        profile = Profile(
+            id=new_user.id,
+            display_name=clean_name,
+            role="operator"
+        )
+        db.add(profile)
+        db.commit()
+    except Exception as pe:
+        db.rollback()
+        print(f"[LakeClean Auth] Note: Profile sync skipped or managed externally ({pe})")
 
     # Issue JWT token
     token = create_access_token(data={

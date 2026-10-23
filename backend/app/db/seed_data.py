@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.app.models.models import (
@@ -15,13 +16,21 @@ def seed_database(db: Session, force: bool = False):
 
     print("[LakeClean Seed] Seeding demonstration lake, zones, reports, and missions...")
 
-    # 1. Profile
-    admin_profile = Profile(
-        id="operator-demo-01",
-        display_name="Mission Commander (Demo)",
-        role="operator"
-    )
-    db.add(admin_profile)
+    # 1. Profile (Demo operator profile if not present)
+    demo_profile_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, "lakeclean.demo.operator"))
+    existing_profile = db.query(Profile).filter(Profile.id == demo_profile_id).first()
+    if not existing_profile:
+        try:
+            admin_profile = Profile(
+                id=demo_profile_id,
+                display_name="Mission Commander (Demo)",
+                role="operator"
+            )
+            db.add(admin_profile)
+            db.flush()
+        except Exception as e:
+            db.rollback()
+            print(f"[LakeClean Seed] Note: Demo profile skipped ({e})")
 
     # 2. Demonstration Water Body: Austin Town Lake / Lady Bird Reservoir Basin
     lake_lat = 30.2580

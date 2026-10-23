@@ -50,14 +50,20 @@ async def lifespan(app: FastAPI):
                     is_active=True
                 )
                 db.add(admin_user)
-                # Sync profile
-                admin_profile = Profile(
-                    id=admin_user.id,
-                    display_name=admin_user.display_name,
-                    role="admin"
-                )
-                db.add(admin_profile)
                 db.commit()
+                db.refresh(admin_user)
+                # Sync profile if possible
+                try:
+                    admin_profile = Profile(
+                        id=admin_user.id,
+                        display_name=admin_user.display_name,
+                        role="admin"
+                    )
+                    db.add(admin_profile)
+                    db.commit()
+                except Exception as pe:
+                    db.rollback()
+                    print(f"[LakeClean] Note: Initial admin profile sync skipped ({pe})")
     finally:
         db.close()
     yield
